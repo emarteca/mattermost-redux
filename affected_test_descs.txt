@@ -1,0 +1,6 @@
+Actions.Posts flagPost
+Actions.Users login
+Actions.Users revokeAllSessionsForCurrentUser
+Actions.Users revokeSessionsForAllUsers
+Actions.Posts unflagPost
+Actions.Users loginById
