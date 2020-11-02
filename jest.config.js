@@ -20,6 +20,7 @@ module.exports = {
     setupFilesAfterEnv: [
         '<rootDir>/test/setup.js',
     ],
+    setupFiles: ['<rootDir>/unit-error-hack.js'],
     clearMocks: true,
     collectCoverageFrom: [
         'src/**/*.{js}',
