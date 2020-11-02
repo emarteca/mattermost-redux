@@ -1,64 +1,118 @@
+const perf_hooks = require('perf_hooks'); 
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
+
 import {Client4} from 'client';
+
 import {SearchTypes} from 'action_types';
+
 import {getCurrentTeamId} from 'selectors/entities/teams';
+
 import {getCurrentUserId, getCurrentUserMentionKeys} from 'selectors/entities/users';
 
+
 import {getChannelAndMyMember, getChannelMembers} from './channels';
+
 import {forceLogoutIfNecessary} from './helpers';
+
 import {logError} from './errors';
+
 import {getProfilesAndStatusesForPosts, receivedPosts} from './posts';
+
 import {ActionResult, batchActions, DispatchFunc, GetStateFunc, ActionFunc} from 'types/actions';
+
 import {Post} from 'types/posts';
+
 import {SearchParameter} from 'types/search';
+
 const WEBAPP_SEARCH_PER_PAGE = 20;
-export function getMissingChannelsFromPosts(posts: Map<string, Post>): ActionFunc {
-    return async (dispatch: DispatchFunc, getState: GetStateFunc) => {
-        const {
+
+export 
+function getMissingChannelsFromPosts(posts: Map<string, Post>): ActionFunc 
+{
+    
+return async (dispatch: DispatchFunc, getState: GetStateFunc) => 
+{
+        
+const {
             channels,
             membersInChannel,
             myMembers,
         } = getState().entities.channels;
-        const promises: Promise<ActionResult>[] = [];
-        Object.values(posts).forEach((post) => {
-            const id = post.channel_id;
+        
+const promises: Promise<ActionResult>[] = [];
+        
+Object.values(posts).forEach((post) => 
+{
+            
+const id = post.channel_id;
 
-            if (!channels[id] || !myMembers[id]) {
-                promises.push(dispatch(getChannelAndMyMember(id)));
+            
+if (!channels[id] || !myMembers[id]) 
+{
+                
+promises.push(dispatch(getChannelAndMyMember(id)));
             }
 
-            if (!membersInChannel[id]) {
-                promises.push(dispatch(getChannelMembers(id)));
+            
+if (!membersInChannel[id]) 
+{
+                
+promises.push(dispatch(getChannelMembers(id)));
             }
-        });
-        return Promise.all(promises);
+        })
+;
+        
+return Promise.all(promises);
     };
+
 }
 
-export function searchPostsWithParams(teamId: string, params: SearchParameter): ActionFunc {
-    return async (dispatch: DispatchFunc, getState: GetStateFunc) => {
-        const isGettingMore = params.page > 0;
-        dispatch({
+
+export 
+function searchPostsWithParams(teamId: string, params: SearchParameter): ActionFunc 
+{
+    
+return async (dispatch: DispatchFunc, getState: GetStateFunc) => 
+{
+        
+const isGettingMore = params.page > 0;
+        
+dispatch({
             type: SearchTypes.SEARCH_POSTS_REQUEST,
             isGettingMore,
         });
-        let posts;
+        
+let posts;
 
-        try {
-            posts = await Client4.searchPostsWithParams(teamId, params);
+        
+try 
+{
+            
+posts = await Client4.searchPostsWithParams(teamId, params);
 
-            const profilesAndStatuses = getProfilesAndStatusesForPosts(posts.posts, dispatch, getState);
-            const missingChannels = dispatch(getMissingChannelsFromPosts(posts.posts));
-            const arr: [Promise<any>, Promise<any>] = [profilesAndStatuses, missingChannels];
-            await Promise.all(arr);
-        } catch (error) {
-            forceLogoutIfNecessary(error, dispatch, getState);
-            dispatch(logError(error));
-            return {error};
+            
+const profilesAndStatuses = getProfilesAndStatusesForPosts(posts.posts, dispatch, getState);
+            
+const missingChannels = dispatch(getMissingChannelsFromPosts(posts.posts));
+            
+const arr: [Promise<any>, Promise<any>] = [profilesAndStatuses, missingChannels];
+            
+await Promise.all(arr);
+        } 
+
+catch (error) 
+{
+            
+forceLogoutIfNecessary(error, dispatch, getState);
+            
+dispatch(logError(error));
+            
+return {error};
         }
 
-        dispatch(batchActions([
+        
+dispatch(batchActions([
             {
                 type: SearchTypes.RECEIVED_SEARCH_POSTS,
                 data: posts,
@@ -78,58 +132,107 @@ export function searchPostsWithParams(teamId: string, params: SearchParameter): 
             },
         ], 'SEARCH_POST_BATCH'));
 
-        return {data: posts};
+        
+return {data: posts};
     };
+
 }
 
-export function searchPosts(teamId: string, terms: string, isOrSearch: boolean, includeDeletedChannels: boolean) {
-    return searchPostsWithParams(teamId, {terms, is_or_search: isOrSearch, include_deleted_channels: includeDeletedChannels, page: 0, per_page: WEBAPP_SEARCH_PER_PAGE});
+
+export 
+function searchPosts(teamId: string, terms: string, isOrSearch: boolean, includeDeletedChannels: boolean) 
+{
+    
+return searchPostsWithParams(teamId, {terms, is_or_search: isOrSearch, include_deleted_channels: includeDeletedChannels, page: 0, per_page: WEBAPP_SEARCH_PER_PAGE});
 }
 
-export function getMorePostsForSearch(): ActionFunc {
-    return async (dispatch: DispatchFunc, getState: GetStateFunc) => {
-        const teamId = getCurrentTeamId(getState());
-        const {params, isEnd} = getState().entities.search.current[teamId];
-        if (!isEnd) {
-            const newParams = Object.assign({}, params);
-            newParams.page += 1;
-            return dispatch(searchPostsWithParams(teamId, newParams));
+
+export 
+function getMorePostsForSearch(): ActionFunc 
+{
+    
+return async (dispatch: DispatchFunc, getState: GetStateFunc) => 
+{
+        
+const teamId = getCurrentTeamId(getState());
+        
+const {params, isEnd} = getState().entities.search.current[teamId];
+        
+if (!isEnd) 
+{
+            
+const newParams = Object.assign({}, params);
+            
+newParams.page += 1;
+            
+return dispatch(searchPostsWithParams(teamId, newParams));
         }
-        return {data: true};
+        
+return {data: true};
     };
+
 }
 
-export function clearSearch(): ActionFunc {
-    return async (dispatch) => {
-        dispatch({type: SearchTypes.REMOVE_SEARCH_POSTS});
 
-        return {data: true};
+export 
+function clearSearch(): ActionFunc 
+{
+    
+return async (dispatch) => 
+{
+        
+dispatch({type: SearchTypes.REMOVE_SEARCH_POSTS});
+
+        
+return {data: true};
     };
+
 }
 
-export function getFlaggedPosts(): ActionFunc {
-    return async (dispatch: DispatchFunc, getState: GetStateFunc) => {
-        const state = getState();
-        const userId = getCurrentUserId(state);
-        const teamId = getCurrentTeamId(state);
 
-        dispatch({type: SearchTypes.SEARCH_FLAGGED_POSTS_REQUEST});
+export 
+function getFlaggedPosts(): ActionFunc 
+{
+    
+return async (dispatch: DispatchFunc, getState: GetStateFunc) => 
+{
+        
+const state = getState();
+        
+const userId = getCurrentUserId(state);
+        
+const teamId = getCurrentTeamId(state);
 
-        let posts;
-        try {
-            posts = await Client4.getFlaggedPosts(userId, '', teamId);
+        
+dispatch({type: SearchTypes.SEARCH_FLAGGED_POSTS_REQUEST});
 
-            await Promise.all([getProfilesAndStatusesForPosts(posts.posts, dispatch, getState) as any, dispatch(getMissingChannelsFromPosts(posts.posts)) as any]);
-        } catch (error) {
-            forceLogoutIfNecessary(error, dispatch, getState);
-            dispatch(batchActions([
+        
+let posts;
+        
+try 
+{
+            
+posts = await Client4.getFlaggedPosts(userId, '', teamId);
+
+            
+await Promise.all([getProfilesAndStatusesForPosts(posts.posts, dispatch, getState) as any, dispatch(getMissingChannelsFromPosts(posts.posts)) as any]);
+        } 
+
+catch (error) 
+{
+            
+forceLogoutIfNecessary(error, dispatch, getState);
+            
+dispatch(batchActions([
                 {type: SearchTypes.SEARCH_FLAGGED_POSTS_FAILURE, error},
                 logError(error),
             ]));
-            return {error};
+            
+return {error};
         }
 
-        dispatch(batchActions([
+        
+dispatch(batchActions([
             {
                 type: SearchTypes.RECEIVED_SEARCH_FLAGGED_POSTS,
                 data: posts,
@@ -140,32 +243,55 @@ export function getFlaggedPosts(): ActionFunc {
             },
         ], 'SEARCH_FLAGGED_POSTS_BATCH'));
 
-        return {data: posts};
+        
+return {data: posts};
     };
+
 }
 
-export function getPinnedPosts(channelId: string): ActionFunc {
-    return async (dispatch: DispatchFunc, getState: GetStateFunc) => {
-        dispatch({type: SearchTypes.SEARCH_PINNED_POSTS_REQUEST});
 
-        let result;
-        try {
-            result = await Client4.getPinnedPosts(channelId);
+export 
+function getPinnedPosts(channelId: string): ActionFunc 
+{
+    
+return async (dispatch: DispatchFunc, getState: GetStateFunc) => 
+{
+        
+dispatch({type: SearchTypes.SEARCH_PINNED_POSTS_REQUEST});
 
-            const profilesAndStatuses = getProfilesAndStatusesForPosts(result.posts, dispatch, getState);
-            const missingChannels = dispatch(getMissingChannelsFromPosts(result.posts));
-            const arr: [Promise<any>, Promise<any>] = [profilesAndStatuses, missingChannels];
-            await Promise.all(arr);
-        } catch (error) {
-            forceLogoutIfNecessary(error, dispatch, getState);
-            dispatch(batchActions([
+        
+let result;
+        
+try 
+{
+            
+result = await Client4.getPinnedPosts(channelId);
+
+            
+const profilesAndStatuses = getProfilesAndStatusesForPosts(result.posts, dispatch, getState);
+            
+const missingChannels = dispatch(getMissingChannelsFromPosts(result.posts));
+            
+const arr: [Promise<any>, Promise<any>] = [profilesAndStatuses, missingChannels];
+            
+await Promise.all(arr);
+        } 
+
+catch (error) 
+{
+            
+forceLogoutIfNecessary(error, dispatch, getState);
+            
+dispatch(batchActions([
                 {type: SearchTypes.SEARCH_PINNED_POSTS_FAILURE, error},
                 logError(error),
             ]));
-            return {error};
+            
+return {error};
         }
 
-        dispatch(batchActions([
+        
+dispatch(batchActions([
             {
                 type: SearchTypes.RECEIVED_SEARCH_PINNED_POSTS,
                 data: {
@@ -179,50 +305,92 @@ export function getPinnedPosts(channelId: string): ActionFunc {
             },
         ], 'SEARCH_PINNED_POSTS_BATCH'));
 
-        return {data: result};
+        
+return {data: result};
     };
+
 }
 
-export function clearPinnedPosts(channelId: string): ActionFunc {
-    return async (dispatch) => {
-        dispatch({
+
+export 
+function clearPinnedPosts(channelId: string): ActionFunc 
+{
+    
+return async (dispatch) => 
+{
+        
+dispatch({
             type: SearchTypes.REMOVE_SEARCH_PINNED_POSTS,
             data: {
                 channelId,
             },
         });
 
-        return {data: true};
+        
+return {data: true};
     };
+
 }
 
-export function getRecentMentions(): ActionFunc {
-    return async (dispatch: DispatchFunc, getState: GetStateFunc) => {
-        const state = getState();
-        const teamId = getCurrentTeamId(state);
 
-        let posts;
-        try {
-            const termKeys = getCurrentUserMentionKeys(state).filter(({key}) => {
-                return key !== '@channel' && key !== '@all' && key !== '@here';
-            });
+export 
+function getRecentMentions(): ActionFunc 
+{
+    
+return async (dispatch: DispatchFunc, getState: GetStateFunc) => 
+{
+        
+const state = getState();
+        
+const teamId = getCurrentTeamId(state);
 
-            const terms = termKeys.map(({key}) => key).join(' ').trim() + ' ';
+        
+let posts;
+        
+try 
+{
+            
+const termKeys = getCurrentUserMentionKeys(state).filter(({key}) => 
+{
+                
+return key !== '@channel' && key !== '@all' && key !== '@here';
+            })
+;
 
-            Client4.trackEvent('api', 'api_posts_search_mention');
-            posts = await Client4.searchPosts(teamId, terms, true);
+            
+const terms = termKeys.map(({key}) => key).join(' ').trim() + ' ';
 
-            const profilesAndStatuses = getProfilesAndStatusesForPosts(posts.posts, dispatch, getState);
-            const missingChannels = dispatch(getMissingChannelsFromPosts(posts.posts));
-            const arr: [Promise<any>, Promise<any>] = [profilesAndStatuses, missingChannels];
-            await Promise.all(arr);
-        } catch (error) {
-            forceLogoutIfNecessary(error, dispatch, getState);
-            dispatch(logError(error));
-            return {error};
+            
+Client4.trackEvent('api', 'api_posts_search_mention');
+            
+
+var TIMING_TEMP_VAR_AUTOGEN93__RANDOM = perf_hooks.performance.now();
+ var AWAIT_VAR_TIMING_TEMP_VAR_AUTOGEN93__RANDOM = await  Client4.searchPosts(teamId, terms, true);
+console.log("/home/ellen/Documents/ASJProj/TESTING_reordering/mattermost-redux/src/actions/search.ts& [212, 12; 212, 67]& TEMP_VAR_AUTOGEN93__RANDOM& " + (perf_hooks.performance.now() - TIMING_TEMP_VAR_AUTOGEN93__RANDOM));
+ posts =  AWAIT_VAR_TIMING_TEMP_VAR_AUTOGEN93__RANDOM
+
+            
+const profilesAndStatuses = getProfilesAndStatusesForPosts(posts.posts, dispatch, getState);
+            
+const missingChannels = dispatch(getMissingChannelsFromPosts(posts.posts));
+            
+const arr: [Promise<any>, Promise<any>] = [profilesAndStatuses, missingChannels];
+            
+await Promise.all(arr);
+        } 
+
+catch (error) 
+{
+            
+forceLogoutIfNecessary(error, dispatch, getState);
+            
+dispatch(logError(error));
+            
+return {error};
         }
 
-        dispatch(batchActions([
+        
+dispatch(batchActions([
             {
                 type: SearchTypes.RECEIVED_SEARCH_POSTS,
                 data: posts,
@@ -230,13 +398,21 @@ export function getRecentMentions(): ActionFunc {
             receivedPosts(posts),
         ], 'SEARCH_RECENT_MENTIONS_BATCH'));
 
-        return {data: posts};
+        
+return {data: posts};
     };
+
 }
 
-export function removeSearchTerms(teamId: string, terms: string): ActionFunc {
-    return async (dispatch) => {
-        dispatch({
+
+export 
+function removeSearchTerms(teamId: string, terms: string): ActionFunc 
+{
+    
+return async (dispatch) => 
+{
+        
+dispatch({
             type: SearchTypes.REMOVE_SEARCH_TERM,
             data: {
                 teamId,
@@ -244,9 +420,12 @@ export function removeSearchTerms(teamId: string, terms: string): ActionFunc {
             },
         });
 
-        return {data: true};
+        
+return {data: true};
     };
+
 }
+
 
 export default {
     clearSearch,
